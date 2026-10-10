@@ -1,0 +1,79 @@
+models:
+  - name: dim_clientes
+    description: Dimensão de clientes da Banvic, com dados cadastrais e localidade.
+    columns:
+      - name: pk_cliente
+        data_tests:
+          - unique
+          - not_null
+
+  - name: dim_agencias
+    description: Dimensão de agências da Banvic.
+    columns:
+      - name: pk_agencia
+        data_tests:
+          - unique
+          - not_null
+
+  - name: dim_colaboradores
+    description: Dimensão de colaboradores da Banvic.
+    columns:
+      - name: pk_colaborador
+        data_tests:
+          - unique
+          - not_null
+
+  - name: dim_contas
+    description: Dimensão de contas, com tipo, saldos e datas de abertura e último lançamento.
+    columns:
+      - name: pk_conta
+        data_tests:
+          - unique
+          - not_null
+
+  - name: dim_datas
+    description: Dimensão calendário, com uma linha por dia de 2010 a 2030.
+    columns:
+      - name: pk_data
+        data_tests:
+          - unique
+          - not_null
+
+  - name: fct_transacoes
+    description: Fato de transações, com uma linha por transação realizada.
+    columns:
+      - name: pk_transacao
+        data_tests:
+          - unique
+          - not_null
+      - name: fk_conta
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_contas')
+                field: pk_conta
+      - name: fk_cliente
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_clientes')
+                field: pk_cliente
+      - name: fk_agencia
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_agencias')
+                field: pk_agencia
+      - name: fk_colaborador
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_colaboradores')
+                field: pk_colaborador
+      - name: fk_data
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_datas')
+                field: pk_data
