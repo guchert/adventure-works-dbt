@@ -1,26 +1,20 @@
+{#
+    Define o nome do schema onde cada modelo é gravado.
+    Por padrão, o dbt junta o schema do usuário com o schema da camada
+    (por exemplo, dbt_lmiranda_staging). Esta macro usa apenas o nome da
+    camada, para que o data warehouse tenha schemas limpos:
+    staging, intermediate e marts.
+#}
 {% macro generate_schema_name(custom_schema_name, node) -%}
 
-    {%- set default_schema = target.schema -%}
-    {%- if target.name in ['prod', 'dev'] and custom_schema_name is not none -%}
+    {%- if custom_schema_name is none -%}
+
+        {{ target.schema }}
+
+    {%- else -%}
 
         {{ custom_schema_name | trim }}
 
-    {%- else -%}
-    
-        {%- if custom_schema_name is none -%}
-
-            {{ default_schema }}
-        
-        {%- elif custom_schema_name == 'erp_banvic' -%}
-
-            {{ custom_schema_name | trim }}
-
-        {%- else -%}
-
-            {{ default_schema }}_{{ custom_schema_name | trim }}
-
-        {%- endif -%}
-    
     {%- endif -%}
 
 {%- endmacro %}
