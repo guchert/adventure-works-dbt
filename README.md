@@ -1,25 +1,23 @@
-# Indicium Academy
+# Adventure Works: data warehouse de vendas com dbt
 
-Repositório para ser utilizado no curso de Formação de Analytics Engineering by Indicium. Faça o fork deste repositório e o utilize durante as aulas práticas para ter os dados do Banvic disponíveis em seu ambiente. Configurado para utilização com Databricks.
+Projeto da certificação em Analytics Engineer da Indicium. Transforma os dados brutos do sistema transacional da Adventure Works em um data warehouse dimensional no Databricks, consumido por um painel de vendas no Power BI.
 
-## Instruções
+## Arquitetura
 
-Todas as tabelas do banco fonte do Banvic serão carregadas como seeds pelo dbt. Os arquivos .csv com os dados já estão na pasta de seeds.
+| Camada | Onde fica | O que contém |
+| --- | --- | --- |
+| Dados brutos | `fea_academy.adventure_works` | Tabelas do sistema de origem, carregadas sem transformação |
+| Staging | `adventure_works_dw.staging` | Limpeza, tipos e nomes padronizados, uma view por tabela de origem |
+| Intermediate | `adventure_works_dw.intermediate` | Joins e regras de negócio |
+| Marts | `adventure_works_dw.marts` | Dimensões e fato do esquema estrela |
 
-Para fazer o carregamento de todas as tabelas usem o comando:
-- `dbt seed`
+## Como executar
 
-Para carregar uma tabela especifíca utilizem o comando
-- `dbt seed -s nome_do_csv`
+```
+dbt deps
+dbt build
+```
 
-### Problemas comuns
+## Autor
 
-Em caso a linha de comando do dbt fique com o status de estar sempre carregando, ou, o job do comando `dbt seed` fique rodando indefinitivamente mesmo após todas as tabelas forem carregadas você precisará reiniciar o terminal. Para isso, clique nos três pontos no canto inferior direito ou no lado direito da linha de comando e escolha a opção `Restart IDE`.
-
-
-## Recursos:
-- Learn more about dbt [in the docs](https://docs.getdbt.com/docs/introduction)
-- Check out [Discourse](https://discourse.getdbt.com/) for commonly asked questions and answers
-- Join the [dbt community](http://community.getbdt.com/) to learn from other analytics engineers
-- Find [dbt events](https://events.getdbt.com) near you
-- Check out [the blog](https://blog.getdbt.com/) for the latest news on dbt's development and best practices
+Leonardo Guchert Miranda
