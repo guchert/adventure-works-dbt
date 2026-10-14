@@ -1,0 +1,226 @@
+models:
+
+  # -------------------------------------------------------------------
+  # Fato
+  # -------------------------------------------------------------------
+  - name: fct_vendas
+    description: >
+      Fato de vendas da Adventure Works. Uma linha por item de pedido, ou seja, um produto
+      dentro de um pedido. Contém as chaves das dimensões e as métricas de quantidade e valor.
+      O número de pedidos deve ser calculado como contagem distinta de numero_pedido.
+    data_tests:
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "valor_liquido <= valor_bruto"
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "quantidade_comprada > 0"
+    columns:
+      - name: pk_item_pedido
+        description: Chave primária. Identificador do item do pedido na origem (salesorderdetailid).
+        data_tests:
+          - unique
+          - not_null
+      - name: numero_pedido
+        description: Número do pedido (salesorderid). Dimensão degenerada, usada para contar pedidos e para ligar a fato à ponte de motivos de venda.
+        data_tests:
+          - not_null
+      - name: fk_produto
+        description: Chave do produto vendido. Liga à dim_produtos.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_produtos')
+                field: pk_produto
+      - name: fk_cliente
+        description: Chave do cliente que fez o pedido. Liga à dim_clientes.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_clientes')
+                field: pk_cliente
+      - name: fk_cartao
+        description: Chave do cartão de crédito usado. Vale -1 quando o pedido não foi pago com cartão. Liga à dim_cartoes.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_cartoes')
+                field: pk_cartao
+      - name: fk_localizacao
+        description: Chave do endereço de entrega do pedido. Liga à dim_localizacoes, que traz cidade, estado e país.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_localizacoes')
+                field: pk_localizacao
+      - name: fk_data
+        description: Data do pedido (orderdate). Liga à dim_datas.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_datas')
+                field: pk_data
+      - name: status_pedido
+        description: Status do pedido, descrito em texto. Dimensão degenerada.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Em processamento', 'Aprovado', 'Em espera', 'Rejeitado', 'Enviado', 'Cancelado']
+      - name: quantidade_comprada
+        description: Quantidade comprada do produto no pedido (orderqty).
+      - name: preco_unitario
+        description: Preço unitário do produto no pedido (unitprice).
+      - name: percentual_desconto
+        description: Percentual de desconto sobre o preço unitário, de 0 a 1 (unitpricediscount).
+      - name: valor_bruto
+        description: Valor total negociado, sem descontos. Preço unitário vezes quantidade. É a base do teste de vendas brutas de 2011.
+      - name: valor_desconto
+        description: Valor deixado de faturar com descontos. Valor bruto vezes o percentual de desconto.
+      - name: valor_liquido
+        description: Valor negociado líquido de descontos. Valor bruto vezes um menos o percentual de desconto. É a base do ticket médio.
+
+  # -------------------------------------------------------------------
+  # Ponte
+  # -------------------------------------------------------------------
+  - name: ponte_pedidos_motivos
+    description: >
+      Tabela ponte entre pedidos e motivos de venda. Uma linha por par de pedido e motivo.
+      Existe porque um pedido pode ter até três motivos: ligar os motivos direto à fato
+      duplicaria os valores. Pedidos sem motivo apontam para o motivo -1.
+    columns:
+      - name: pk_pedido_motivo
+        description: Chave primária, gerada a partir do número do pedido e da chave do motivo.
+        data_tests:
+          - unique
+          - not_null
+      - name: numero_pedido
+        description: Número do pedido. Liga à coluna numero_pedido da fct_vendas.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('fct_vendas')
+                field: numero_pedido
+      - name: fk_motivo_venda
+        description: Chave do motivo de venda. Liga à dim_motivos_venda.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_motivos_venda')
+                field: pk_motivo_venda
+
+  # -------------------------------------------------------------------
+  # Dimensões
+  # -------------------------------------------------------------------
+  - name: dim_clientes
+    description: Dimensão de clientes. Uma linha por cliente, que pode ser uma pessoa física, uma loja ou o contato de uma loja.
+    columns:
+      - name: pk_cliente
+        description: Chave primária. Identificador do cliente na origem (customerid).
+        data_tests:
+          - unique
+          - not_null
+      - name: nome_cliente
+        description: Nome completo da pessoa. Para clientes que são apenas lojas, nome da loja.
+      - name: tipo_cliente
+        description: Pessoa física, Loja ou Contato de loja.
+      - name: nome_loja
+        description: Nome da loja associada ao cliente, quando houver.
+
+  - name: dim_produtos
+    description: Dimensão de produtos. Uma linha por produto, com subcategoria e categoria.
+    columns:
+      - name: pk_produto
+        description: Chave primária. Identificador do produto na origem (productid).
+        data_tests:
+          - unique
+          - not_null
+      - name: nome_produto
+        description: Nome do produto.
+      - name: numero_produto
+        description: Código do produto usado pela Adventure Works.
+      - name: subcategoria
+        description: Subcategoria do produto. "Sem subcategoria" para componentes de fabricação.
+      - name: categoria
+        description: Categoria do produto, como Bikes ou Accessories.
+      - name: cor
+        description: Cor do produto, quando houver.
+      - name: custo_padrao
+        description: Custo padrão do produto.
+      - name: preco_lista
+        description: Preço de tabela do produto.
+
+  - name: dim_localizacoes
+    description: Dimensão de localizações. Uma linha por endereço, com cidade, estado e país. A fato usa o endereço de entrega do pedido.
+    columns:
+      - name: pk_localizacao
+        description: Chave primária. Identificador do endereço na origem (addressid).
+        data_tests:
+          - unique
+          - not_null
+      - name: cidade
+        description: Cidade do endereço.
+      - name: sigla_estado
+        description: Sigla do estado ou província.
+      - name: estado
+        description: Nome do estado ou província.
+      - name: codigo_pais
+        description: Código do país.
+      - name: pais
+        description: Nome do país.
+
+  - name: dim_cartoes
+    description: Dimensão de cartões de crédito. Uma linha por cartão, mais a linha -1, "Sem cartão", para os pedidos pagos sem cartão.
+    columns:
+      - name: pk_cartao
+        description: Chave primária. Identificador do cartão na origem (creditcardid), ou -1 para "Sem cartão".
+        data_tests:
+          - unique
+          - not_null
+      - name: tipo_cartao
+        description: Bandeira ou tipo do cartão, como Vista ou SuperiorCard.
+
+  - name: dim_motivos_venda
+    description: Dimensão de motivos de venda. Uma linha por motivo, mais a linha -1, "Sem motivo informado". Liga-se à fato pela ponte_pedidos_motivos.
+    columns:
+      - name: pk_motivo_venda
+        description: Chave primária. Identificador do motivo na origem (salesreasonid), ou -1 para "Sem motivo informado".
+        data_tests:
+          - unique
+          - not_null
+      - name: nome_motivo
+        description: Nome do motivo de venda, como Price ou On Promotion.
+      - name: tipo_motivo
+        description: Tipo do motivo de venda, como Marketing, Promotion ou Other.
+
+  - name: dim_datas
+    description: Dimensão de datas. Uma linha por dia, de 01/01/2011 a 31/12/2014, gerada no dbt.
+    columns:
+      - name: pk_data
+        description: Chave primária. A própria data.
+        data_tests:
+          - unique
+          - not_null
+      - name: dia
+        description: Dia do mês.
+      - name: mes
+        description: Número do mês, de 1 a 12.
+      - name: nome_mes
+        description: Nome do mês em português.
+      - name: trimestre
+        description: Trimestre do ano, de 1 a 4.
+      - name: ano
+        description: Ano.
+      - name: ano_mes
+        description: Ano e mês no formato AAAA-MM, para gráficos de série temporal.
+      - name: dia_semana
+        description: Número do dia da semana, de 1 (domingo) a 7 (sábado).
+      - name: nome_dia_semana
+        description: Nome do dia da semana em português.

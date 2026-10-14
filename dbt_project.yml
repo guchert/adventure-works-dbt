@@ -21,6 +21,9 @@ models:
   adventure_works:
     # Catálogo do Databricks onde o dbt grava todos os modelos.
     +database: adventure_works_dw
+    # Define o catálogo da sessão antes de cada modelo. Sem isso, o Databricks
+    # tenta usar o Hive Metastore, que está desativado no workspace.
+    +pre-hook: "USE CATALOG adventure_works_dw"
 
     # Staging: limpeza e padronização das tabelas de origem, uma para uma.
     staging:
