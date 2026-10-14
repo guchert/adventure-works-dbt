@@ -1,0 +1,85 @@
+models:
+  - name: stg_erp__pedidos
+    description: Pedidos de venda limpos, uma linha por pedido, com datas convertidas e status descrito.
+    columns:
+      - name: pk_pedido
+        data_tests: [unique, not_null]
+
+  - name: stg_erp__itens_pedido
+    description: Itens dos pedidos, uma linha por produto dentro de um pedido.
+    columns:
+      - name: pk_item_pedido
+        data_tests: [unique, not_null]
+
+  - name: stg_erp__pedidos_motivos
+    description: Relação entre pedidos e motivos de venda.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [fk_pedido, fk_motivo_venda]
+
+  - name: stg_erp__motivos_venda
+    description: Motivos de venda, com nome e tipo.
+    columns:
+      - name: pk_motivo_venda
+        data_tests: [unique, not_null]
+
+  - name: stg_erp__clientes
+    description: Clientes, com a pessoa e a loja associadas.
+    columns:
+      - name: pk_cliente
+        data_tests: [unique, not_null]
+
+  - name: stg_erp__cartoes
+    description: Cartões de crédito, sem o número do cartão.
+    columns:
+      - name: pk_cartao
+        data_tests: [unique, not_null]
+
+  - name: stg_erp__lojas
+    description: Lojas revendedoras.
+    columns:
+      - name: pk_loja
+        data_tests: [unique, not_null]
+
+  - name: stg_erp__pessoas
+    description: Pessoas, com o nome completo montado.
+    columns:
+      - name: pk_pessoa
+        data_tests: [unique, not_null]
+
+  - name: stg_erp__enderecos
+    description: Endereços, com cidade e estado.
+    columns:
+      - name: pk_endereco
+        data_tests: [unique, not_null]
+
+  - name: stg_erp__estados
+    description: Estados e províncias, com o país.
+    columns:
+      - name: pk_estado
+        data_tests: [unique, not_null]
+
+  - name: stg_erp__paises
+    description: Países, com o código da Namíbia restaurado.
+    columns:
+      - name: pk_pais
+        data_tests: [unique, not_null]
+
+  - name: stg_erp__produtos
+    description: Produtos, com a subcategoria associada.
+    columns:
+      - name: pk_produto
+        data_tests: [unique, not_null]
+
+  - name: stg_erp__subcategorias
+    description: Subcategorias de produto, com a categoria associada.
+    columns:
+      - name: pk_subcategoria
+        data_tests: [unique, not_null]
+
+  - name: stg_erp__categorias
+    description: Categorias de produto.
+    columns:
+      - name: pk_categoria
+        data_tests: [unique, not_null]

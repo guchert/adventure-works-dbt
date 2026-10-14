@@ -1,0 +1,246 @@
+sources:
+  - name: erp
+    description: Banco de dados transacional (ERP) da Adventure Works, carregado no Databricks sem transformação pelo notebook de ingestão.
+    database: fea_academy
+    schema: adventure_works
+    tables:
+
+      # ---------------------------------------------------------------
+      # Vendas
+      # ---------------------------------------------------------------
+      - name: sales_salesorderheader
+        description: Cabeçalho dos pedidos de venda. Uma linha por pedido, com data, status, cliente, cartão e endereços.
+        columns:
+          - name: salesorderid
+            description: Identificador do pedido. Chave primária.
+            data_tests:
+              - unique
+              - not_null
+          - name: orderdate
+            description: Data em que o pedido foi feito.
+            data_tests:
+              - not_null
+          - name: status
+            description: "Código do status do pedido: 1 em processamento, 2 aprovado, 3 em espera, 4 rejeitado, 5 enviado, 6 cancelado."
+            data_tests:
+              - not_null
+              - accepted_values:
+                  arguments:
+                    values: [1, 2, 3, 4, 5, 6]
+                    quote: false
+          - name: customerid
+            description: Cliente que fez o pedido.
+            data_tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: source('erp', 'sales_customer')
+                    field: customerid
+          - name: shiptoaddressid
+            description: Endereço de entrega do pedido.
+            data_tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: source('erp', 'person_address')
+                    field: addressid
+          - name: creditcardid
+            description: Cartão de crédito usado no pedido. Vazio quando o pedido não foi pago com cartão.
+
+      - name: sales_salesorderdetail
+        description: Itens dos pedidos de venda. Uma linha por produto dentro de um pedido, com quantidade, preço e desconto.
+        columns:
+          - name: salesorderdetailid
+            description: Identificador do item do pedido. Chave primária.
+            data_tests:
+              - unique
+              - not_null
+          - name: salesorderid
+            description: Pedido ao qual o item pertence.
+            data_tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: source('erp', 'sales_salesorderheader')
+                    field: salesorderid
+          - name: productid
+            description: Produto vendido.
+            data_tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: source('erp', 'production_product')
+                    field: productid
+          - name: orderqty
+            description: Quantidade comprada do produto.
+            data_tests:
+              - not_null
+          - name: unitprice
+            description: Preço unitário do produto no pedido.
+            data_tests:
+              - not_null
+          - name: unitpricediscount
+            description: Percentual de desconto aplicado ao preço unitário, de 0 a 1.
+            data_tests:
+              - not_null
+
+      - name: sales_salesorderheadersalesreason
+        description: Relação entre pedidos e motivos de venda. Um pedido pode ter mais de um motivo.
+        data_tests:
+          - dbt_utils.unique_combination_of_columns:
+              arguments:
+                combination_of_columns:
+                  - salesorderid
+                  - salesreasonid
+        columns:
+          - name: salesorderid
+            description: Pedido.
+            data_tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: source('erp', 'sales_salesorderheader')
+                    field: salesorderid
+          - name: salesreasonid
+            description: Motivo de venda.
+            data_tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: source('erp', 'sales_salesreason')
+                    field: salesreasonid
+
+      - name: sales_salesreason
+        description: Cadastro dos motivos de venda, com nome e tipo.
+        columns:
+          - name: salesreasonid
+            description: Identificador do motivo de venda. Chave primária.
+            data_tests:
+              - unique
+              - not_null
+
+      - name: sales_customer
+        description: Cadastro de clientes. Um cliente pode ser uma pessoa, uma loja ou a pessoa de contato de uma loja.
+        columns:
+          - name: customerid
+            description: Identificador do cliente. Chave primária.
+            data_tests:
+              - unique
+              - not_null
+
+      - name: sales_creditcard
+        description: Cadastro dos cartões de crédito usados nos pedidos.
+        columns:
+          - name: creditcardid
+            description: Identificador do cartão. Chave primária.
+            data_tests:
+              - unique
+              - not_null
+
+      - name: sales_store
+        description: Cadastro das lojas revendedoras que compram da Adventure Works.
+        columns:
+          - name: businessentityid
+            description: Identificador da loja. Chave primária.
+            data_tests:
+              - unique
+              - not_null
+
+      # ---------------------------------------------------------------
+      # Pessoas e endereços
+      # ---------------------------------------------------------------
+      - name: person_person
+        description: Cadastro de pessoas, incluindo clientes, vendedores e contatos de lojas.
+        columns:
+          - name: businessentityid
+            description: Identificador da pessoa. Chave primária.
+            data_tests:
+              - unique
+              - not_null
+
+      - name: person_address
+        description: Cadastro de endereços, com cidade e estado.
+        columns:
+          - name: addressid
+            description: Identificador do endereço. Chave primária.
+            data_tests:
+              - unique
+              - not_null
+          - name: stateprovinceid
+            description: Estado ou província do endereço.
+            data_tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: source('erp', 'person_stateprovince')
+                    field: stateprovinceid
+
+      - name: person_stateprovince
+        description: Cadastro de estados e províncias.
+        columns:
+          - name: stateprovinceid
+            description: Identificador do estado. Chave primária.
+            data_tests:
+              - unique
+              - not_null
+          - name: countryregioncode
+            description: País ao qual o estado pertence.
+            data_tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: source('erp', 'person_countryregion')
+                    field: countryregioncode
+
+      - name: person_countryregion
+        description: Cadastro de países.
+        columns:
+          - name: countryregioncode
+            description: >
+              Código do país. Chave primária. Defeito conhecido da ingestão: o pandas leu o
+              código "NA" da Namíbia como valor ausente, e a linha chegou com o código vazio.
+              O teste de não vazio fica como aviso para registrar o defeito, que é corrigido
+              no modelo stg_erp__paises.
+            data_tests:
+              - unique
+              - not_null:
+                  config:
+                    severity: warn
+
+      # ---------------------------------------------------------------
+      # Produtos
+      # ---------------------------------------------------------------
+      - name: production_product
+        description: Cadastro de produtos vendidos ou usados na fabricação.
+        columns:
+          - name: productid
+            description: Identificador do produto. Chave primária.
+            data_tests:
+              - unique
+              - not_null
+
+      - name: production_productsubcategory
+        description: Cadastro das subcategorias de produto.
+        columns:
+          - name: productsubcategoryid
+            description: Identificador da subcategoria. Chave primária.
+            data_tests:
+              - unique
+              - not_null
+          - name: productcategoryid
+            description: Categoria à qual a subcategoria pertence.
+            data_tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: source('erp', 'production_productcategory')
+                    field: productcategoryid
+
+      - name: production_productcategory
+        description: Cadastro das categorias de produto.
+        columns:
+          - name: productcategoryid
+            description: Identificador da categoria. Chave primária.
+            data_tests:
+              - unique
+              - not_null
